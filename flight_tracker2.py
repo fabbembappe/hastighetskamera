@@ -159,5 +159,5 @@ while True:                                                 # huvudloop — kör
     if key == ord('q'):                                     # om 'q' trycks
         break                                               # avbryt loopen
 
-cap.release(q)                                               # stäng videoströmmen
-cv2.destroyAllWindows(q)                                     # stäng alla OpenCV-fönster
+cap.release()                                               # stäng videoströmmen
+cv2.destroyAllWindows()                                     # stäng alla OpenCV-fönster
