@@ -5,7 +5,6 @@ import time                                                 # för tidmätning (
 # ─── Config ────────────────────────────────────────────────────────────────────
 RTSP_URL    = "rtsp://192.168.10.208:8554/live.sdp"         # adress till kamerans videoström
 PLANE_LEN_M = 0.19                                          # planets verkliga längd i meter (19 cm)
-Z_CAL       = 1.00                                          # kalibreringsavstånd i meter (när du trycker 'c')
 MIN_AREA    = 500                                           # minsta tillåtna konturyta i pixlar² (filtrerar brus)
 MIN_ASPECT  = 1.8                                           # minsta tillåtna förhållande längd/bredd (avvisar plan rakt framifrån)
 LOST_TIMEOUT = 0.35                                         # antal sekunder utan plan innan spårningen nollställs
@@ -13,7 +12,7 @@ LOST_TIMEOUT = 0.35                                         # antal sekunder uta
 ALPHA = dict(depth=0.25, speed=0.35, pos=0.40, length=0.30) # utjämningsfaktorer för EMA-filter (lågt = stabilt, högt = snabbt)
 
 # ─── State ─────────────────────────────────────────────────────────────────────
-fx = fy = 700.0                                             # fokallängd i pixlar (kamerans "zoom"); kalibreras med 'c'
+fx = fy = 700.0                                             # fokallängd i pixlar (kamerans "zoom")
 
 ema       = dict(depth=0.0, speed=0.0, length=0.0, cx=None, cy=None)  # senaste utjämnade värden för djup, hastighet, längd, position
 prev      = dict(cx=None, cy=None, t=time.perf_counter())   # förra framens centroid och tidsstämpel (används för hastighet)
@@ -69,7 +68,7 @@ for name, default, max_val in [                             # loop: skapar 6 tra
 
 kernel = np.ones((3, 3), np.uint8)                          # 3×3-matris av ettor för morfologi-operationer
 tb = lambda n: cv2.getTrackbarPos(n, "Trackbars")           # hjälpfunktion: läser värdet från en trackbar
-print("Controls: q=quit | c=calibrate fx (hold plane at known distance)")  # skriver ut tangentbordsinstruktioner
+print("Controls: q=quit")                                   # skriver ut tangentbordsinstruktioner
 
 # ─── Main loop ─────────────────────────────────────────────────────────────────
 first_frame = True                                          # flagga: skriv bara ut upplösningen vid första framet
@@ -153,21 +152,12 @@ while True:                                                 # huvudloop — kör
         (f"Speed: {ema['speed']:.2f} m/s",   110),          # uppmätt hastighet
         (f"Depth: {ema['depth']:.2f} m",     230),          # uppmätt djup
     ])
-    cv2.putText(frame, f"fx: {fx:.1f}  (press c @ {Z_CAL:.2f}m)",  # rita kalibrerings-info längst ner
-                (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-
     cv2.imshow("Frame", frame)                              # visa huvudbilden i fönstret "Frame"
     cv2.imshow("Mask",  mask)                               # visa masken i fönstret "Mask"
 
     key = cv2.waitKey(1) & 0xFF                             # vänta 1 ms och läs ev. tangenttryck
     if key == ord('q'):                                     # om 'q' trycks
         break                                               # avbryt loopen
-    if key == ord('c'):                                     # om 'c' trycks → kalibrering
-        if detected and ema["length"] > 1:                  # bara om planet är synligt och har giltig längd
-            fx = fy = (ema["length"] * Z_CAL) / PLANE_LEN_M # vänd på pinhole-formeln för att lösa ut fx
-            print(f"Calibrated fx/fy = {fx:.2f}  (Z={Z_CAL}m, L_px={ema['length']:.1f})")  # bekräftelse
-        else:
-            print("Cannot calibrate: plane not detected or too small")  # felmeddelande
 
 cap.release(q)                                               # stäng videoströmmen
 cv2.destroyAllWindows(q)                                     # stäng alla OpenCV-fönster
